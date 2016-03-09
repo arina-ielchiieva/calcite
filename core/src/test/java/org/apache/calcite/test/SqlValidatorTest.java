@@ -1125,9 +1125,10 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     checkWholeExpFails(
         "{fn log10('1')}",
         "(?s).*Cannot apply.*fn LOG10..<CHAR.1.>.*");
-    checkWholeExpFails(
-        "{fn log10(1,1)}",
-        "(?s).*Encountered .fn LOG10. with 2 parameter.s.; was expecting 1 parameter.s.*");
+    final String expected = "Cannot apply '\\{fn LOG10\\}' to arguments of"
+        + " type '\\{fn LOG10\\}\\(<INTEGER>, <INTEGER>\\)'\\. "
+        + "Supported form\\(s\\): '\\{fn LOG10\\}\\(<NUMERIC>\\)'";
+    checkWholeExpFails("{fn log10(1,1)}", expected);
     checkWholeExpFails(
         "{fn fn(1)}",
         "(?s).*Function '.fn FN.' is not defined.*");
@@ -3579,6 +3580,54 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     checkWholeExpFails(
         "1.234/interval '1 1:2:3' day to second",
         "(?s).*Cannot apply '/' to arguments of type '<DECIMAL.4, 3.> / <INTERVAL DAY TO SECOND>'.*");
+  }
+
+  @Test public void testTimestampAddAndDiff() {
+    List<String> tsi = ImmutableList.<String>builder()
+        .add("FRAC_SECOND")
+        .add("MICROSECOND")
+        .add("MINUTE")
+        .add("HOUR")
+        .add("DAY")
+        .add("WEEK")
+        .add("MONTH")
+        .add("QUARTER")
+        .add("YEAR")
+        .add("SQL_TSI_FRAC_SECOND")
+        .add("SQL_TSI_MICROSECOND")
+        .add("SQL_TSI_MINUTE")
+        .add("SQL_TSI_HOUR")
+        .add("SQL_TSI_DAY")
+        .add("SQL_TSI_WEEK")
+        .add("SQL_TSI_MONTH")
+        .add("SQL_TSI_QUARTER")
+        .add("SQL_TSI_YEAR")
+        .build();
+
+    List<String> functions = ImmutableList.<String>builder()
+        .add("timestampadd(%s, 12, current_timestamp)")
+        .add("timestampdiff(%s, current_timestamp, current_timestamp)")
+        .build();
+
+    for (String interval : tsi) {
+      for (String function : functions) {
+        checkExp(String.format(function, interval));
+      }
+    }
+
+    checkExpType(
+        "timestampadd(SQL_TSI_WEEK, 2, current_timestamp)", "TIMESTAMP(0) NOT NULL");
+    checkExpType(
+        "timestampadd(SQL_TSI_WEEK, 2, cast(null as timestamp))", "TIMESTAMP(0)");
+    checkExpType(
+        "timestampdiff(SQL_TSI_WEEK, current_timestamp, current_timestamp)", "INTEGER NOT NULL");
+    checkExpType(
+        "timestampdiff(SQL_TSI_WEEK, cast(null as timestamp), current_timestamp)", "INTEGER");
+
+    checkWholeExpFails("timestampadd(incorrect, 1, current_timestamp)",
+        "(?s).*Was expecting one of.*");
+    checkWholeExpFails("timestampdiff(incorrect, current_timestamp, current_timestamp)",
+        "(?s).*Was expecting one of.*");
   }
 
   @Test public void testNumericOperators() {

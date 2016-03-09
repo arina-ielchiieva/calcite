@@ -47,6 +47,7 @@ import org.apache.calcite.sql.type.InferTypes;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlOperandCountRanges;
+import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.ReflectiveSqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlModality;
@@ -1307,6 +1308,68 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
    */
   public static final SqlFunction CURRENT_DATE =
       new SqlCurrentDateFunction();
+
+  /**
+   * <p>The <code>TIMESTAMPADD</code> function, which adds an interval to a
+   * timestamp.
+   *
+   * <p>The SQL syntax is
+   *
+   * <blockquote>
+   * <code>TIMESTAMPADD(<i>timestamp interval</i>, <i>quantity</i>, <i>timestamp</i>)</code>
+   * </blockquote>
+   *
+   * <p>The interval time unit can one of the following literals:<ul>
+   * <li>MICROSECOND (and synonyms SQL_TSI_MICROSECOND, FRAC_SECOND,
+   *     SQL_TSI_FRAC_SECOND)
+   * <li>SECOND (and synonym SQL_TSI_SECOND)
+   * <li>MINUTE (and synonym  SQL_TSI_MINUTE)
+   * <li>HOUR (and synonym  SQL_TSI_HOUR)
+   * <li>DAY (and synonym SQL_TSI_DAY)
+   * <li>WEEK (and synonym  SQL_TSI_WEEK)
+   * <li>MONTH (and synonym SQL_TSI_MONTH)
+   * <li>QUARTER (and synonym SQL_TSI_QUARTER)
+   * <li>YEAR (and synonym  SQL_TSI_YEAR)
+   * </ul>
+   *
+   * <p>Returns modified timestamp.
+   */
+  public static final SqlFunction TIMESTAMP_ADD =
+      new SqlFunction("TIMESTAMPADD", SqlKind.TIMESTAMP_ADD, ReturnTypes.ARG2,
+          null,
+          OperandTypes.family(SqlTypeFamily.ANY, SqlTypeFamily.INTEGER,
+              SqlTypeFamily.DATETIME), SqlFunctionCategory.TIMEDATE);
+
+  /**
+   * <p>The <code>TIMESTAMPDIFF</code> function, which calculates the difference
+   * between two timestamps.
+   *
+   * <p>The SQL syntax is
+   *
+   * <blockquote>
+   * <code>TIMESTAMPDIFF(<i>timestamp interval</i>, <i>timestamp</i>, <i>timestamp</i>)</code>
+   * </blockquote>
+   *
+   * <p>The interval time unit can one of the following literals:<ul>
+   * <li>MICROSECOND (and synonyms SQL_TSI_MICROSECOND, FRAC_SECOND,
+   *     SQL_TSI_FRAC_SECOND)
+   * <li>SECOND (and synonym SQL_TSI_SECOND)
+   * <li>MINUTE (and synonym  SQL_TSI_MINUTE)
+   * <li>HOUR (and synonym  SQL_TSI_HOUR)
+   * <li>DAY (and synonym SQL_TSI_DAY)
+   * <li>WEEK (and synonym  SQL_TSI_WEEK)
+   * <li>MONTH (and synonym SQL_TSI_MONTH)
+   * <li>QUARTER (and synonym SQL_TSI_QUARTER)
+   * <li>YEAR (and synonym  SQL_TSI_YEAR)
+   * </ul>
+   *
+   * <p>Returns difference between two timestamps in indicated timestamp interval.
+   */
+  public static final SqlFunction TIMESTAMP_DIFF =
+      new SqlFunction("TIMESTAMPDIFF", SqlKind.TIMESTAMP_DIFF,
+          ReturnTypes.INTEGER_NULLABLE, null,
+          OperandTypes.family(SqlTypeFamily.ANY, SqlTypeFamily.DATETIME,
+              SqlTypeFamily.DATETIME), SqlFunctionCategory.TIMEDATE);
 
   /**
    * Use of the <code>IN_FENNEL</code> operator forces the argument to be

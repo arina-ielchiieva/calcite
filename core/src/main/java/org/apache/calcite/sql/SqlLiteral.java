@@ -124,7 +124,7 @@ import static org.apache.calcite.util.Static.RESOURCE;
  * the SQL standard, and is not exposed to end-users. It is used to hold a
  * symbol, such as the LEADING flag in a call to the function <code>
  * TRIM([LEADING|TRAILING|BOTH] chars FROM string)</code>.</td>
- * <td>A class which implements the {@link SqlSymbol} interface</td>
+ * <td>An {@link Enum}</td>
  * </tr>
  * <tr>
  * <td>{@link SqlTypeName#INTERVAL_DAY_TIME}</td>
@@ -203,9 +203,8 @@ public class SqlLiteral extends SqlNode {
     case CHAR:
       return value instanceof NlsString;
     case SYMBOL:
-      return (value instanceof SqlSymbol)
-          || (value instanceof SqlSampleSpec)
-          || (value instanceof TimeUnitRange);
+      return (value instanceof Enum)
+          || (value instanceof SqlSampleSpec);
     case MULTISET:
     case MAP:
       return true;
@@ -233,16 +232,22 @@ public class SqlLiteral extends SqlNode {
    * do.
    *
    * @see #booleanValue()
-   * @see #symbolValue()
+   * @see #symbolValue(Class)
    */
   public Object getValue() {
     return value;
   }
 
   /** Returns the value as a symbol. */
-  public <E extends SqlSymbol> E symbolValue() {
+  @Deprecated // to be removed before 2.0
+  public <E extends Enum<E>> E symbolValue_() {
     //noinspection unchecked
     return (E) value;
+  }
+
+  /** Returns the value as a symbol. */
+  public <E extends Enum<E>> E symbolValue(Class<E> class_) {
+    return class_.cast(value);
   }
 
   /** Returns the value as a boolean. */
@@ -254,7 +259,7 @@ public class SqlLiteral extends SqlNode {
    * Extracts the {@link SqlSampleSpec} value from a symbol literal.
    *
    * @throws ClassCastException if the value is not a symbol literal
-   * @see #createSymbol(SqlSymbol, SqlParserPos)
+   * @see #createSymbol(Enum, SqlParserPos)
    */
   public static SqlSampleSpec sampleValue(SqlNode node) {
     return (SqlSampleSpec) ((SqlLiteral) node).value;
@@ -451,11 +456,9 @@ public class SqlLiteral extends SqlNode {
    * <code>TRAILING</code> keyword in the call <code>Trim(TRAILING 'x' FROM
    * 'Hello world!')</code>.
    *
-   * @see #symbolValue()
+   * @see #symbolValue(Class)
    */
-  public static SqlLiteral createSymbol(
-      SqlLiteral.SqlSymbol o,
-      SqlParserPos pos) {
+  public static SqlLiteral createSymbol(Enum<?> o, SqlParserPos pos) {
     return new SqlLiteral(o, SqlTypeName.SYMBOL, pos);
   }
 
@@ -581,7 +584,6 @@ public class SqlLiteral extends SqlNode {
     case DECIMAL:
     case DOUBLE:
     case BINARY:
-
       // should be handled in subtype
       throw Util.unexpected(typeName);
 
@@ -877,6 +879,7 @@ public class SqlLiteral extends SqlNode {
    * unparsed, which is sometimes not the same as the enumerated value's name
    * (e.g. "UNBOUNDED PRECEDING" versus "UnboundedPreceeding").
    */
+  @Deprecated // to be removed before 2.0
   public interface SqlSymbol {
     String name();
 

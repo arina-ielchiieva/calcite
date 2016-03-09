@@ -486,6 +486,11 @@ Not implemented:
 
 #### Date/time
 
+| Operator syntax | Description
+|:--------------- |:-----------
+| {fn TIMESTAMPADD(interval, count, timestamp)} | Adds an interval to a timestamp
+| {fn TIMESTAMPDIFF(interval, timestamp, timestamp)} | Subtracts two timestamps
+
 Not implemented:
 
 * {fn CURDATE()}
@@ -501,8 +506,6 @@ Not implemented:
 * {fn NOW()}
 * {fn QUARTER(date)}
 * {fn SECOND(time)}
-* {fn TIMESTAMPADD(interval, count, timestamp)}
-* {fn TIMESTAMPDIFF(interval, timestamp, timestamp)}
 * {fn WEEK(date)}
 * {fn YEAR(date)}
 
