@@ -1586,9 +1586,20 @@ SqlNode FromClause() :
     SqlLiteral natural, joinType;
     SqlNodeList list;
     SqlParserPos pos;
+    boolean closingParenthesisIsRequired = false;
+    boolean hasJoin = false;
 }
 {
-    e = TableRef()
+    (
+           LOOKAHEAD(3)
+           <LPAREN>
+           e = TableRef()
+           {
+              closingParenthesisIsRequired = true;
+           }
+       |
+            e = TableRef()
+    )
     (
         // Decide whether to read a JOIN clause or a comma, or to quit having
         // seen a single entry FROM clause like 'FROM emps'. See comments
@@ -1597,6 +1608,9 @@ SqlNode FromClause() :
         natural = Natural()
         joinType = JoinType()
         e2 = TableRef()
+        {
+            hasJoin = true;
+        }
         (
             <ON> { pos = getPos(); }
             condition = Expression(ExprContext.ACCEPT_SUBQUERY) {
@@ -1649,6 +1663,9 @@ SqlNode FromClause() :
                 null);
         }
     ) *
+    ( LOOKAHEAD( { closingParenthesisIsRequired && hasJoin } )
+        <RPAREN>
+    )?
     {
         return e;
     }

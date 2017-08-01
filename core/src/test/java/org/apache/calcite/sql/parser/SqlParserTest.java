@@ -2003,13 +2003,13 @@ public class SqlParserTest {
         "select 1 from ^values^('x')",
         "Encountered \"values\" at line 1, column 15\\.\n"
             + "Was expecting one of:\n"
+            + "    \"\\(\" \\.\\.\\.\n"
             + "    <IDENTIFIER> \\.\\.\\.\n"
             + "    <QUOTED_IDENTIFIER> \\.\\.\\.\n"
             + "    <BACK_QUOTED_IDENTIFIER> \\.\\.\\.\n"
             + "    <BRACKET_QUOTED_IDENTIFIER> \\.\\.\\.\n"
             + "    <UNICODE_QUOTED_IDENTIFIER> \\.\\.\\.\n"
             + "    \"LATERAL\" \\.\\.\\.\n"
-            + "    \"\\(\" \\.\\.\\.\n"
             + "    \"UNNEST\" \\.\\.\\.\n"
             + "    \"TABLE\" \\.\\.\\.\n"
             + "    ");
@@ -2086,8 +2086,8 @@ public class SqlParserTest {
         "(?s).*Encountered \"table emp\" at .*");
 
     checkFails(
-        "select * from (^table^ (select empno from emp))",
-        "(?s)Encountered \"table \\(\".*");
+        "select * from (table (^select^ empno from emp))",
+        "(?s)Encountered \"select\".*");
   }
 
   @Test public void testCollectionTable() {
@@ -5528,37 +5528,65 @@ public class SqlParserTest {
 
   @Test public void testParensInFrom() {
     // UNNEST may not occur within parentheses.
-    // FIXME should fail at "unnest"
     checkFails(
-        "select *from ^(^unnest(x))",
-        "(?s)Encountered \"\\( unnest\" at .*");
+        "select *from (unnest(x)^)^",
+        "(?s)Encountered \"\\)\" at .*");
 
     // <table-name> may not occur within parentheses.
     checkFails(
-        "select * from (^emp^)",
-        "(?s)Non-query expression encountered in illegal context.*");
+        "select * from (emp^)^",
+        "(?s)Encountered \"\\)\" at .*");
 
     // <table-name> may not occur within parentheses.
     checkFails(
-        "select * from (^emp^ as x)",
-        "(?s)Non-query expression encountered in illegal context.*");
+        "select * from (emp as x^)^",
+        "(?s)Encountered \"\\)\" at .*");
 
     // <table-name> may not occur within parentheses.
     checkFails(
-        "select * from (^emp^) as x",
-        "(?s)Non-query expression encountered in illegal context.*");
+        "select * from (emp^)^ as x",
+        "(?s)Encountered \"\\)\" at .*");
 
     // Parentheses around JOINs are OK, and sometimes necessary.
+    check(
+        "select * from (emp join dept using (deptno))",
+        "SELECT *\n"
+            + "FROM `EMP`\n"
+            + "INNER JOIN `DEPT` USING (`DEPTNO`)");
+
     if (false) {
       // todo:
-      check(
-          "select * from (emp join dept using (deptno))",
-          "xx");
-
       check(
           "select * from (emp join dept using (deptno)) join foo using (x)",
           "xx");
     }
+  }
+
+  @Test public void parenthesisOverFromClauseWithJoin() {
+    check("select * from ((select deptno as e_deptno from emp) e join dept "
+            + "on (dept.deptno = e.e_deptno))",
+        "SELECT *\n"
+            + "FROM (SELECT `DEPTNO` AS `E_DEPTNO`\n"
+            + "FROM `EMP`) AS `E`\n"
+            + "INNER JOIN `DEPT` ON (`DEPT`.`DEPTNO` = `E`.`E_DEPTNO`)");
+
+    check(
+        "select * from (emp join (select deptno as d_deptno from dept) d "
+            + "on (d.d_deptno = emp.deptno))",
+        "SELECT *\n"
+            + "FROM `EMP`\n"
+            + "INNER JOIN (SELECT `DEPTNO` AS `D_DEPTNO`\n"
+            + "FROM `DEPT`) AS `D` ON (`D`.`D_DEPTNO` = `EMP`.`DEPTNO`)");
+
+    check(
+        "select * from ((select deptno as d from emp) e "
+            + "join (select deptno as d_deptno from dept) d "
+            + "on (d.d_deptno = e.e_deptno))",
+        "SELECT *\n"
+            + "FROM (SELECT `DEPTNO` AS `D`\n"
+            + "FROM `EMP`) AS `E`\n"
+            + "INNER JOIN (SELECT `DEPTNO` AS `D_DEPTNO`\n"
+            + "FROM `DEPT`) AS `D` ON (`D`.`D_DEPTNO` = `E`.`E_DEPTNO`)");
   }
 
   @Test public void testProcedureCall() {
